@@ -118,7 +118,6 @@ DES::DES(string str, string inputKey, bool crpt) {
 			cout << "There's something wrong when writing the file" << endl;
 			
 		} else {
-
 			outFile << result;
 			outFile.close();
 		}
@@ -127,7 +126,7 @@ DES::DES(string str, string inputKey, bool crpt) {
 		string str;
 		ifstream inFile("Decryption.txt");
 		if(!inFile) {
-			cout << "There's something wrong when writing the file" << endl;
+			cout << "There's something wrong when opening the file" << endl;
 		} else {
 			while(getline(inFile,str)) {  } 
 			inFile >> str;
@@ -278,7 +277,7 @@ bitset<33> DES::feistel(const bitset<33> lastRight, const bitset<49> key){
 	// 4. 连接
 	bitset<33> assemblyResult = assemblySBoxOuput(sBoxResult);
 	// 5. P置换
-	bitset<33> result = Ppremutation(assemblyResult);
+	bitset<33> result = Ppermutation(assemblyResult);
 	return result;
 }
 
@@ -369,7 +368,7 @@ void DES::iterateLS(const bitset<29>& c, const bitset<29>& d, bitset<49> k[]) {
 
 bitset<29> DES::leftShift(const bitset<29> origin, int shiftBit) {
 	bitset<29> result;
-	result = result >> shiftBit;
+	result = origin >> shiftBit;
 	if(shiftBit == 1) {
 		result[28] = origin[1];
 		result.reset(0);
@@ -394,10 +393,10 @@ bitset<49> DES::PC2permutation(const bitset<29>& c, const bitset<29>& d) {
 	return result;
 }
 
-bitset<33> DES::Ppremutation(const bitset<33> origin) {
+bitset<33> DES::Ppermutation(const bitset<33> origin) {
 	bitset<33> result;
 	for(int i = 1; i < 33; i++) {
-		result = origin[P[i-1]];
+		result[i] = origin[P[i-1]];
 	}
 	return result;
 }
