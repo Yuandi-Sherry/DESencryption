@@ -91,84 +91,70 @@ int inverseIP[64] = {40,  8, 48, 16, 56, 24, 64, 32,
                      34,  2, 42, 10, 50, 18, 58, 26,
                      33,  1, 41,  9, 49, 17, 57, 25};
 DES::DES(string str, string inputKey, bool crpt) {
-		this->crpt = crpt;
-		charToBitset(inputKey,key);
-		generateSubKeys(key, k);
-		result = "";
-		if(crpt) { // 加密
-
-			int size = str.length()/8+1;
-			string* substrs;
-			substrs = new string[size];
-			preprocess(str, substrs, size);
-			// 将char数组的明文转化为bitset[1, 64]
-			for(int i = 0; i < size; i++) {
-				charToBitset(substrs[i] , m);
-				// IP置换
-				bitset<33> IPleft;
-				bitset<33> IPright;
-				IPpermutation(m, IPleft, IPright);
-				//16轮迭代T（含交换置换W）
-				bitset<65> iterateTresult = iterateT(IPleft, IPright);
-				//逆置换IP-1
-				c = inverseIPpermutation(iterateTresult);
-				result += getResult();
-			}
-			ofstream outFile("Decryption.txt");
-			if(!outFile) {
-				cout << "There's something wrong when writing the file" << endl;
-				
-			} else {
-
-				outFile << result;
-				outFile.close();
-			}
+	this->crpt = crpt;
+	charToBitset(inputKey,key);
+	generateSubKeys(key, k);
+	result = "";
+	if(crpt) { // 加密
+		int size = str.length()/8+1;
+		string* substrs;
+		substrs = new string[size];
+		preprocess(str, substrs, size);
+		// 将char数组的明文转化为bitset[1, 64]
+		for(int i = 0; i < size; i++) {
+			charToBitset(substrs[i] , m);
+			// IP置换
+			bitset<33> IPleft;
+			bitset<33> IPright;
+			IPpermutation(m, IPleft, IPright);
+			//16轮迭代T（含交换置换W）
+			bitset<65> iterateTresult = iterateT(IPleft, IPright);
+			//逆置换IP-1
+			c = inverseIPpermutation(iterateTresult);
+			result += getResult();
+		}
+		ofstream outFile("Decryption.txt");
+		if(!outFile) {
+			cout << "There's something wrong when writing the file" << endl;
 			
-			/*for(int i = 0; i < size; i++) {
-				cout << substrs[i] << " ";
-			}*/
-			//cout <<"result in des" << result << endl;
+		} else {
 
-			delete [] substrs;
-		} else { // 解密
-			string str;
-			ifstream inFile("Decryption.txt");
-			if(!inFile) {
-				cout << "There's something wrong when writing the file" << endl;
-				
-			} else {
-				while(getline(inFile,str)) 
-			    { 
-			        
-			    } 
-				inFile >> str;
-				inFile.close();
-			}
-			
-			int size = str.length()/8+1;
-			string* substrs;
-			substrs = new string[size];
-			preprocess(str, substrs, size);
-			// 将char数组的明文转化为bitset[1, 64]
-			for(int i = 0; i < size; i++) {
-				charToBitset(substrs[i], c);
-				bitset<33> IPleft;
-				bitset<33> IPright;
-				IPpermutation(c, IPright, IPleft);
-				bitset<65> iterateTresult = iterateT_solve(IPright, IPleft);
-				m = inverseIPpermutation(iterateTresult);
-				result += getResult();
-			}
-			result = result.substr(0, result.length() - 9);
-			int slice = result[result.length() - 1] - '0';
-			result = result.substr(0, result.length() - slice + 1);
-			delete [] substrs;
+			outFile << result;
+			outFile.close();
+		}
+		delete [] substrs;
+	} else { // 解密
+		string str;
+		ifstream inFile("Decryption.txt");
+		if(!inFile) {
+			cout << "There's something wrong when writing the file" << endl;
+		} else {
+			while(getline(inFile,str)) {  } 
+			inFile >> str;
+			inFile.close();
 		}
 		
+		int size = str.length()/8+1;
+		string* substrs;
+		substrs = new string[size];
+		preprocess(str, substrs, size);
+		// 将char数组的明文转化为bitset[1, 64]
+		for(int i = 0; i < size; i++) {
+			charToBitset(substrs[i], c);
+			bitset<33> IPleft;
+			bitset<33> IPright;
+			IPpermutation(c, IPright, IPleft);
+			bitset<65> iterateTresult = iterateT_solve(IPright, IPleft);
+			m = inverseIPpermutation(iterateTresult);
+			result += getResult();
+		}
+		result = result.substr(0, result.length() - 9);
+		int slice = result[result.length() - 1] - '0';
+		result = result.substr(0, result.length() - slice + 1);
+		delete [] substrs;
 	}
-	DES::~DES() {
-
-	}
+}
+DES::~DES() {}
 
 void DES::preprocess(const string str, string * substrs, const int & size) {
 	for(int i = 0; i < str.length()/8; i++) {
@@ -181,246 +167,245 @@ void DES::preprocess(const string str, string * substrs, const int & size) {
 	}
 }
 
-
-	string DES::getResult() {
-		if(crpt) {
-			return bitsetToChar(c);
-		}
-		else {
-			return bitsetToChar(m);
-		}
+string DES::getResult() {
+	if(crpt) {
+		return bitsetToChar(c);
 	}
+	else {
+		return bitsetToChar(m);
+	}
+}
 
 	// origin 从左向右
-	void DES::charToBitset(string str, bitset<65> & origin) {
-		for(int i = 0; i < 8; i++) { // traverse STR
-			for(int j = 0; j < 8; j++) { // set bitset
-				if(((int)(str[i] + 128) % (1 << (8 - j))>> (7 - j) == 1)) {
-					origin.set(i*8 + j + 1);
-				} else {
-					origin.reset(i*8 + j + 1);
-				}
+void DES::charToBitset(string str, bitset<65> & origin) {
+	for(int i = 0; i < 8; i++) { // traverse STR
+		for(int j = 0; j < 8; j++) { // set bitset
+			if(((int)(str[i] + 128) % (1 << (8 - j))>> (7 - j) == 1)) {
+				origin.set(i*8 + j + 1);
+			} else {
+				origin.reset(i*8 + j + 1);
 			}
 		}
 	}
+}
 
-	string DES::bitsetToChar(const bitset<65> & result) {
-		string temp = "";
-		for(int i = 0; i <= 7; i++) {
-			char character;
-			character &= 0;
-			for(int j = 1; j <= 8; j++) {
-				character |= result[i*8+j] << (8 - j);
-			}
-			temp = temp + char(character - 128);
+string DES::bitsetToChar(const bitset<65> & result) {
+	string temp = "";
+	for(int i = 0; i <= 7; i++) {
+		char character;
+		character &= 0;
+		for(int j = 1; j <= 8; j++) {
+			character |= result[i*8+j] << (8 - j);
 		}
-		return temp;
+		temp = temp + char(character - 128);
 	}
+	return temp;
+}
 
 	// IP置换
-	void DES::IPpermutation(const bitset<65> & origin, bitset<33> & left, bitset<33> & right) {
-		bitset<65> IPresult;
-		IPresult.reset();
-		for(int i = 1; i < 65; i++) {
-			if(origin[IP[i-1]] == 1) {
-				IPresult.set(i);
-			}
-		}
-		left.reset();
-		right.reset();
-		for(int i = 1; i <= 32; i++) {
-			left[i] = IPresult[i];
-			right[i] = IPresult[i + 32];
+void DES::IPpermutation(const bitset<65> & origin, bitset<33> & left, bitset<33> & right) {
+	bitset<65> IPresult;
+	IPresult.reset();
+	for(int i = 1; i < 65; i++) {
+		if(origin[IP[i-1]] == 1) {
+			IPresult.set(i);
 		}
 	}
+	left.reset();
+	right.reset();
+	for(int i = 1; i <= 32; i++) {
+		left[i] = IPresult[i];
+		right[i] = IPresult[i + 32];
+	}
+}
 
 
 	// 左右交换
-	bitset<65> DES::LRexchange(const bitset<33> & left, const bitset<33> & right) {
-		bitset<65> result;
-		for(int i = 1; i <= 32; i++) {
-			result[i] = right[i];
-			result[32+i] = left[i];
-		}
-		return result;
+bitset<65> DES::LRexchange(const bitset<33> & left, const bitset<33> & right) {
+	bitset<65> result;
+	for(int i = 1; i <= 32; i++) {
+		result[i] = right[i];
+		result[32+i] = left[i];
 	}
+	return result;
+}
 
 
 	// 16次迭代T
-	bitset<65> DES::iterateT(const bitset<33> & left, const bitset<33> & right) {
-		bitset<33> lastLeft = left;
-		bitset<33> lastRight = right;
-		bitset<33> curLeft;
-		bitset<33> curRight;
-		for(int i = 1; i <= 16; i++) {
-			curLeft = lastRight;
-			curRight = lastLeft ^ feistel(lastRight, k[i-1]);
-			lastLeft = curLeft;
-			lastRight = curRight;
-		}
-		return LRexchange(curLeft, curRight);
+bitset<65> DES::iterateT(const bitset<33> & left, const bitset<33> & right) {
+	bitset<33> lastLeft = left;
+	bitset<33> lastRight = right;
+	bitset<33> curLeft;
+	bitset<33> curRight;
+	for(int i = 1; i <= 16; i++) {
+		curLeft = lastRight;
+		curRight = lastLeft ^ feistel(lastRight, k[i-1]);
+		lastLeft = curLeft;
+		lastRight = curRight;
 	}
+	return LRexchange(curLeft, curRight);
+}
 
-	bitset<65> DES::iterateT_solve(const bitset<33> & right, const bitset<33> & left) {
+bitset<65> DES::iterateT_solve(const bitset<33> & right, const bitset<33> & left) {
 		//cout << "in iterateT" << endl;
-		bitset<33> lastA = right;
-		bitset<33> lastB = left;
-		bitset<33> curA;
-		bitset<33> curB;
+	bitset<33> lastA = right;
+	bitset<33> lastB = left;
+	bitset<33> curA;
+	bitset<33> curB;
 
-		for(int i = 16; i >= 1; i--) {
-			curA = lastB;
-			curB = lastA ^ feistel(lastB, k[i-1]);
-			lastA = curA;
-			lastB = curB;
-		}
-
-		return LRexchange(curA, curB);
+	for(int i = 16; i >= 1; i--) {
+		curA = lastB;
+		curB = lastA ^ feistel(lastB, k[i-1]);
+		lastA = curA;
+		lastB = curB;
 	}
 
-	bitset<33> DES::feistel(const bitset<33> lastRight, const bitset<49> key){
-		//cout << "in feistel" << endl;
-		// 1. E拓展
-		bitset<49> eResult = eExpansion(lastRight);
-		// 2. eResult和字谜要进行异或运算
-		bitset<49> xorEResultKey = eResult^key;
-		// 3. (1)分组
-		bitset<7> sBoxInput[8];
-		seperateeExpansion(xorEResultKey, sBoxInput);
-		// 3. (2)sBox 6-4转换
-		bitset<5> sBoxResult[8];
-		sBoxOuput(sBoxInput, sBoxResult);
-		// 4. 连接
-		bitset<33> assemblyResult = assemblySBoxOuput(sBoxResult);
-		// 5. P置换
-		bitset<33> result = Ppremutation(assemblyResult);
-		return result;
-	}
+	return LRexchange(curA, curB);
+}
 
-	bitset<49> DES::eExpansion(const bitset<33> temp) {
-		bitset<49> result;
-		for(int i = 1; i <= 48; i++) {
-			result[i] = temp[Etable[i-1]];
-		}
-	}
+bitset<33> DES::feistel(const bitset<33> lastRight, const bitset<49> key){
+	//cout << "in feistel" << endl;
+	// 1. E拓展
+	bitset<49> eResult = eExpansion(lastRight);
+	// 2. eResult和字谜要进行异或运算
+	bitset<49> xorEResultKey = eResult^key;
+	// 3. (1)分组
+	bitset<7> sBoxInput[8];
+	seperateeExpansion(xorEResultKey, sBoxInput);
+	// 3. (2)sBox 6-4转换
+	bitset<5> sBoxResult[8];
+	sBoxOuput(sBoxInput, sBoxResult);
+	// 4. 连接
+	bitset<33> assemblyResult = assemblySBoxOuput(sBoxResult);
+	// 5. P置换
+	bitset<33> result = Ppremutation(assemblyResult);
+	return result;
+}
 
-	// sBoxInput为8个S盒的输入 DONE
-	void DES::seperateeExpansion(const bitset<49> eResult, bitset<7> sBoxInput[]) {
-		for(int i = 1; i <= 48; i++) {
-			sBoxInput[(i-1)/6][(i - 1)%6 + 1] = eResult[i];
-		}
+bitset<49> DES::eExpansion(const bitset<33> temp) {
+	bitset<49> result;
+	for(int i = 1; i <= 48; i++) {
+		result[i] = temp[Etable[i-1]];
 	}
+}
 
-	// 经过S box 进行6-4转换
-	void DES::sBoxOuput(const bitset<7> sBoxInput[], bitset<5> sBoxResult[]) {
-		int n = 0, m = 0;
-		int sBoxElement = 0;
-		for(int i = 0; i < 8; i++) {
-			n = sBoxInput[i][1] * 2 + sBoxInput[i][6] * 1;
-			m = sBoxInput[i][2] * 8 + sBoxInput[i][3] * 4 + sBoxInput[i][4] * 2 + sBoxInput[i][5] * 1;
-			sBoxElement = sBox[i][(n - 1)*16 + m - 1];
-			sBoxResult[i] = decimalToBinary(sBoxElement);
-		}
+// sBoxInput为8个S盒的输入 DONE
+void DES::seperateeExpansion(const bitset<49> eResult, bitset<7> sBoxInput[]) {
+	for(int i = 1; i <= 48; i++) {
+		sBoxInput[(i-1)/6][(i - 1)%6 + 1] = eResult[i];
 	}
+}
+
+// 经过S box 进行6-4转换
+void DES::sBoxOuput(const bitset<7> sBoxInput[], bitset<5> sBoxResult[]) {
+	int n = 0, m = 0;
+	int sBoxElement = 0;
+	for(int i = 0; i < 8; i++) {
+		n = sBoxInput[i][1] * 2 + sBoxInput[i][6] * 1;
+		m = sBoxInput[i][2] * 8 + sBoxInput[i][3] * 4 + sBoxInput[i][4] * 2 + sBoxInput[i][5] * 1;
+		sBoxElement = sBox[i][(n - 1)*16 + m - 1];
+		sBoxResult[i] = decimalToBinary(sBoxElement);
+	}
+}
 
 	// 将S box中十进制转为4bit-二进制
-	bitset<5> DES::decimalToBinary(const int element) {
-		bitset<5> result;
-		result[1] = element/8;
-		result[2] = (element % 8)/4;
-		result[3] = (element % 4)/2;
-		result[4] = element%2;
-		return result;
-	}
+bitset<5> DES::decimalToBinary(const int element) {
+	bitset<5> result;
+	result[1] = element/8;
+	result[2] = (element % 8)/4;
+	result[3] = (element % 4)/2;
+	result[4] = element%2;
+	return result;
+}
 
-	bitset<33> DES::assemblySBoxOuput(const bitset<5> sBoxResult[]) {
-		bitset<33> result;
-		for(int i = 0; i < 8; i++) {
-			for(int j = 1; j <= 4; j++) {
-				result[i*4+j] = sBoxResult[i][j];
-			}
-		}
-		return result;
-	}
-	void DES::generateSubKeys(const bitset<65> key, bitset<49> k[]) {
-		// (1) 得到C0D0
-		bitset<29> c;
-		bitset<29> d;
-		bitset<57> PC1result;
-		PC1permutation(key, PC1result, c, d);
-		// (2) 迭代循环左移
-		iterateLS(c,d,k);
-	}
-
-	void DES::PC1permutation(const bitset<65> key,bitset<57>& PC1result, bitset<29>& c,
-		bitset<29>& d) {
-		for(int i = 1; i <= 56; i++) {
-			PC1result[i] = key[PC1[i-1]];	
-		}
-		for(int i = 1; i <= 28; i++) {
-			c[i] = PC1result[i];
-			d[i] = PC1result[i + 28];
+bitset<33> DES::assemblySBoxOuput(const bitset<5> sBoxResult[]) {
+	bitset<33> result;
+	for(int i = 0; i < 8; i++) {
+		for(int j = 1; j <= 4; j++) {
+			result[i*4+j] = sBoxResult[i][j];
 		}
 	}
+	return result;
+}
+void DES::generateSubKeys(const bitset<65> key, bitset<49> k[]) {
+	// (1) 得到C0D0
+	bitset<29> c;
+	bitset<29> d;
+	bitset<57> PC1result;
+	PC1permutation(key, PC1result, c, d);
+	// (2) 迭代循环左移
+	iterateLS(c,d,k);
+}
 
-	void DES::iterateLS(const bitset<29>& c, const bitset<29>& d, bitset<49> k[]) {
-		bitset<29> curC;
-		bitset<29> curD;
-		bitset<29> lastC = c;
-		bitset<29> lastD = d;
-		for(int i = 1; i <= 16; i++) {
-			if(i == 1 || i == 2 || i == 9 || i == 16) {
-				curC = leftShift(lastC, 1);
-				curD = leftShift(lastD, 1);
- 			} else {
-				curC = leftShift(lastC, 2);
-				curD = leftShift(lastD, 2);
-			}
-			k[i-1] = PC2permutation(curC, curD);
-			lastC = curC;
-			lastD = curD;
-		}
+void DES::PC1permutation(const bitset<65> key,bitset<57>& PC1result, bitset<29>& c,
+	bitset<29>& d) {
+	for(int i = 1; i <= 56; i++) {
+		PC1result[i] = key[PC1[i-1]];	
 	}
+	for(int i = 1; i <= 28; i++) {
+		c[i] = PC1result[i];
+		d[i] = PC1result[i + 28];
+	}
+}
 
-	bitset<29> DES::leftShift(const bitset<29> origin, int shiftBit) {
-		bitset<29> result;
-		result = result >> shiftBit;
-		if(shiftBit == 1) {
-			result[28] = origin[1];
-			result.reset(0);
+void DES::iterateLS(const bitset<29>& c, const bitset<29>& d, bitset<49> k[]) {
+	bitset<29> curC;
+	bitset<29> curD;
+	bitset<29> lastC = c;
+	bitset<29> lastD = d;
+	for(int i = 1; i <= 16; i++) {
+		if(i == 1 || i == 2 || i == 9 || i == 16) {
+			curC = leftShift(lastC, 1);
+			curD = leftShift(lastD, 1);
 		} else {
-			result[28] = origin[2];
-			result[27] = origin[1];
-			result.reset(0);
+			curC = leftShift(lastC, 2);
+			curD = leftShift(lastD, 2);
 		}
-		return result;
+		k[i-1] = PC2permutation(curC, curD);
+		lastC = curC;
+		lastD = curD;
 	}
+}
 
-	bitset<49> DES::PC2permutation(const bitset<29>& c, const bitset<29>& d) {
-		bitset<49> result;
-		bitset<57> linkCD;
-		for(int i = 1; i <= 28; i++) {
-			linkCD[i] = c[i];
-			linkCD[28+i] = d[i];
-		}
-		for(int i = 1; i <= 48; i++) {
-			result[i] = linkCD[PC2[i-1]];	
-		}
-		return result;
+bitset<29> DES::leftShift(const bitset<29> origin, int shiftBit) {
+	bitset<29> result;
+	result = result >> shiftBit;
+	if(shiftBit == 1) {
+		result[28] = origin[1];
+		result.reset(0);
+	} else {
+		result[28] = origin[2];
+		result[27] = origin[1];
+		result.reset(0);
 	}
+	return result;
+}
 
-	bitset<33> DES::Ppremutation(const bitset<33> origin) {
-		bitset<33> result;
-		for(int i = 1; i < 33; i++) {
-			result = origin[P[i-1]];
-		}
-		return result;
+bitset<49> DES::PC2permutation(const bitset<29>& c, const bitset<29>& d) {
+	bitset<49> result;
+	bitset<57> linkCD;
+	for(int i = 1; i <= 28; i++) {
+		linkCD[i] = c[i];
+		linkCD[28+i] = d[i];
 	}
+	for(int i = 1; i <= 48; i++) {
+		result[i] = linkCD[PC2[i-1]];	
+	}
+	return result;
+}
+
+bitset<33> DES::Ppremutation(const bitset<33> origin) {
+	bitset<33> result;
+	for(int i = 1; i < 33; i++) {
+		result = origin[P[i-1]];
+	}
+	return result;
+}
 	
-	bitset<65> DES::inverseIPpermutation(const bitset<65>& origin) {
-		bitset<65> result;
-		for(int i = 1; i < 65; i++) {
-			result[i] = origin[inverseIP[i-1]];
-		}
-		return result;
+bitset<65> DES::inverseIPpermutation(const bitset<65>& origin) {
+	bitset<65> result;
+	for(int i = 1; i < 65; i++) {
+		result[i] = origin[inverseIP[i-1]];
 	}
+	return result;
+}
